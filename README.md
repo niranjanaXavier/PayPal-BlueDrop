@@ -1,0 +1,349 @@
+# PayPal-BlueDrop
+//simplified and sophisticated person-to-person transaction
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.net.*;
+import java.sql.*;
+
+class BlueDrop1 implements ActionListener,Runnable
+{
+  Frame f;
+  Label title,pin,aadharnum,name,currentbalance,show_notification,confirmation_message;
+  Label send_aadharnum,amounttobesent;
+  TextField t_pin,t_aadharnum,t_name,t_currentbalance,t_sendaadharnum;
+  TextField t_amounttobesent;
+  TextArea t_show_notification,description;
+  Button notification,pay,balance,send_details,login,proceed,confirm,reset,back1,back2;
+  Button sendaadharnum,next,paymentviaqr,scan,noaadharcard;
+  Panel p,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12;
+  CardLayout cl; 
+  
+  Socket soc;
+  PrintWriter pw;
+  BufferedReader br;
+  Thread th;
+  
+  Connection c;
+  Statement s;
+  ResultSet rs;
+  
+  QRimage q=new QRimage();
+  
+  BlueDrop1()
+  {
+    Font f1=new Font("Times New Roman",Font.BOLD,22);
+    f=new Frame("BlueDrop1");
+    title=new Label("Blue Drop");
+	title.setFont(f1);
+	f.setSize(690,700);
+	pin=new Label("Enter PIN");
+	t_pin=new TextField(4);
+	t_pin.setEchoChar('*');
+	notification=new Button("Notification");
+	notification.addActionListener(this);
+	pay=new Button("Go for Payment");
+	pay.addActionListener(this);
+	balance=new Button("View Balance");
+	balance.addActionListener(this);
+	send_details=new Button("Send details");
+	send_details.addActionListener(this);
+	paymentviaqr=new Button("Payment via QR");
+	paymentviaqr.addActionListener(this);
+	login=new Button("Login");
+	login.addActionListener(this);
+	aadharnum=new Label("Aadhar number");
+	t_aadharnum=new TextField(20);
+	t_aadharnum.setEditable(false);
+	proceed=new Button("Proceed");
+	proceed.addActionListener(this);
+	name=new Label("Name");
+	t_name=new TextField(20);
+	t_name.setEditable(false);
+	confirm=new Button("Confirm");
+	confirm.addActionListener(this);
+	reset=new Button("Reset");
+	reset.addActionListener(this);
+	currentbalance=new Label("Balance");
+	t_currentbalance=new TextField(10);
+	t_currentbalance.setEditable(false);
+	back1=new Button("Back");
+	back1.addActionListener(this);
+	show_notification=new Label("Show Notification");
+	t_show_notification=new TextArea("",10,45,1);
+	t_show_notification.setEditable(false);
+	back2=new Button("Back");
+	back2.addActionListener(this);
+	confirmation_message=new Label("..........            ");
+	confirmation_message.setFont(f1);
+	send_aadharnum=new Label("Give your Aadhar card number");
+	t_sendaadharnum=new TextField(20);
+	sendaadharnum=new Button("Send");
+	sendaadharnum.addActionListener(this);
+	amounttobesent=new Label("Enter the Amount");
+	t_amounttobesent=new TextField(6);
+	next=new Button("Next");
+	next.addActionListener(this);
+	description=new TextArea(" When the scan button is pressed, QR code of the Aadhar card is scanned, and from the scanned image, we access the Aadhar number (program has to be written for it)",10,45,1);
+	description.setEditable(false);
+	scan=new Button("Scan");
+	scan.addActionListener(this);
+	noaadharcard=new Button("No Aadhar card ?, Click here");
+	noaadharcard.addActionListener(this);
+	p=new Panel();
+	cl=new CardLayout();
+	p.setLayout(cl);
+	p1=new Panel();
+	p1.add(title);
+    p2=new Panel();
+	p2.add(pin);
+	p2.add(t_pin);
+	p2.add(login);
+	p3=new Panel();
+	p3.add(notification);
+	//p3.add(pay);
+	p3.add(balance);
+	p3.add(send_details);
+	p3.add(paymentviaqr);
+	p4=new Panel();
+	p4.add(aadharnum);
+	p4.add(t_aadharnum);
+	p4.add(proceed);
+	p5=new Panel();
+	p5.add(name);
+	p5.add(t_name);
+	p5.add(confirm);
+	p5.add(reset);
+	p6=new Panel();
+	p6.add(currentbalance);
+	p6.add(t_currentbalance);
+	p6.add(back1);
+	p7=new Panel();
+	p7.add(show_notification);
+	p7.add(t_show_notification);
+	p7.add(back2);
+	p8=new Panel();
+	p8.add(confirmation_message);
+	p9=new Panel();
+	p9.add(send_aadharnum);
+	p9.add(t_sendaadharnum);
+	p9.add(sendaadharnum);
+	p10=new Panel();
+	p10.add(amounttobesent);
+	p10.add(t_amounttobesent);
+	p10.add(next);
+	p11=new Panel();
+	p11.add(description);
+	p11.add(scan);
+	p11.add(noaadharcard);
+	p.add(p1,"Homepage");
+	p.add(p2,"PIN");
+	p.add(p3,"Menu");
+	p.add(p4,"Pay");
+	p.add(p5,"Confirmation");
+	p.add(p6,"Show Balance");
+	p.add(p7,"Show Notifications");
+	p.add(p8,"Payment Under Process");
+	p.add(p9,"Send Aadhar details");
+	p.add(p10,"Amount to be transferred");
+	p.add(p11,"Scan the QRcode");
+	f.add(p);
+	
+	try{
+		 soc=new Socket(InetAddress.getLocalHost(),2000);
+		 br=new BufferedReader(new InputStreamReader(soc.getInputStream()));
+		 pw=new PrintWriter(soc.getOutputStream(),true);
+		}catch(Exception e) {}
+	th=new Thread(this);
+	th.setDaemon(true);
+    th.start();
+	
+	f.addWindowListener(new WindowAdapter()
+    {public void windowClosing(WindowEvent we){ System.exit(0);}});
+	f.setVisible(true);
+	f.setLocation(0,0);
+	f.setLayout(null);
+	try{
+	Thread.sleep(2000);
+	cl.show(p,"PIN");} catch(Exception e){}
+
+  }	  
+  
+  public void actionPerformed(ActionEvent ae)
+  {
+   try{
+    if(ae.getSource()==login)
+	{
+	  if(t_pin.getText().equals(rs.getString(1)))
+	     cl.show(p,"Menu");
+	}
+	if(ae.getSource()==pay)
+	{
+	  cl.show(p,"Amount to be transferred");
+	}
+	if(ae.getSource()==proceed)
+	{
+	  rs.next();
+	  t_name.setText(rs.getString(3));
+	  rs.previous();
+	  cl.show(p,"Confirmation");
+	}
+	if(ae.getSource()==balance)
+	{
+	  t_currentbalance.setText(rs.getString(4));
+	  cl.show(p,"Show Balance");
+	}
+	if(ae.getSource()==notification)
+	{
+	  t_show_notification.setText(rs.getString(5));
+	  cl.show(p,"Show Notifications");
+	}
+	if(ae.getSource()==back1)
+	{
+	  t_aadharnum.setText("");
+	  t_amounttobesent.setText("");
+	  t_currentbalance.setText("");
+	  t_name.setText("");
+	  t_pin.setText("");
+	  t_show_notification.setText("");
+	  cl.show(p,"Menu");
+	}
+	if(ae.getSource()==back2)
+	{
+	  cl.show(p,"Menu");
+	}
+	if(ae.getSource()==reset)
+	{
+	  t_aadharnum.setText("");
+	  t_amounttobesent.setText("");
+	  t_currentbalance.setText("");
+	  t_name.setText("");
+	  t_pin.setText("");
+	  t_show_notification.setText("");
+	  cl.show(p,"Amount to be transferred");
+	}
+	if(ae.getSource()==confirm)
+	{
+	  try{
+	  cl.show(p,"Payment Under Process");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("  ..........          ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("    ..........        ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("      ..........      ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("        ..........    ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("          ..........  ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("..........            ");
+	  Thread.sleep(1000);
+	  confirmation_message.setText("  Successful !! ");
+	  Thread.sleep(2000);
+	  rs.updateString("Balance",String.valueOf(Integer.parseInt(rs.getString(4))-Integer.parseInt(t_amounttobesent.getText())));
+	  rs.updateRow();
+	  String msg1=rs.getString(5);
+	  msg1=msg1+" \\ Amount has been sent to John ";
+	  rs.updateString("Notification",msg1);
+	  rs.updateRow();
+	  rs.next();
+	  rs.updateString("Balance",String.valueOf(Integer.parseInt(rs.getString(4))+Integer.parseInt(t_amounttobesent.getText())));
+	  rs.updateRow();
+	  String msg2=rs.getString(5);
+	  msg2=msg2+" \\ Amount received from Ram";
+	  rs.updateString("Notification",msg2);
+	  rs.updateRow();
+	  rs.previous();
+	  cl.show(p,"Menu");
+	  confirmation_message.setText("..........            ");
+	  }catch(Exception e){}
+	}
+	if(ae.getSource()==send_details)
+	{
+	  cl.show(p,"Send Aadhar details");
+	}
+	if(ae.getSource()==sendaadharnum)
+	{
+	  pw.println(t_sendaadharnum.getText());
+	  t_sendaadharnum.setText("");
+	  try{
+	  Thread.sleep(2000);
+	  }catch(Exception e){}
+	  cl.show(p,"Menu");
+	}
+	if(ae.getSource()==next)
+	{
+	  cl.show(p,"Scan the QRcode");
+	}
+	if(ae.getSource()==paymentviaqr)
+	{
+	  cl.show(p,"Amount to be transferred");
+	}
+	if(ae.getSource()==scan)
+	{
+	  description.setText("Scanning at the background...");
+	  try{
+	  Thread.sleep(2000);
+	  q.open();
+	  Thread.sleep(2000);
+	  cl.show(p,"Pay");
+	  Thread.sleep(2000);
+	  rs.next();
+	  t_aadharnum.setText(rs.getString(2));
+	  rs.previous();
+	  }catch(Exception e){}
+	}
+	if(ae.getSource()==noaadharcard)
+	{
+	  cl.show(p,"Pay");
+	}
+   }catch(Exception e){}	
+  }
+  
+  public void run()
+  {
+    while(true)
+	{
+	  try{
+	    t_aadharnum.setText(br.readLine());
+	  }catch(Exception e){}
+	}
+  }
+  
+  void connec()
+  {
+	try
+	   {
+		Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
+		c=DriverManager.getConnection("jdbc:odbc:bankdb");
+		s=c.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_UPDATABLE);
+		execQry("select * from bank");
+	   }
+	catch(Exception e)
+		{
+			System.out.println(e);
+		}
+  }
+  
+  void execQry(String qry)
+  {
+		try	
+		{
+			rs=s.executeQuery(qry);
+			rs.first();
+			System.out.println("Query executed successfully...");
+		}
+		catch(Exception e)
+		{	
+			System.out.println(e);
+		}
+  }
+  
+  public static void main(String arg[])
+  {
+	BlueDrop1 bp=new BlueDrop1();	
+	bp.connec();
+  }
+}
