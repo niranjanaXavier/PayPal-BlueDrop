@@ -1,0 +1,31 @@
+import javax.swing.*;
+public class QRimage extends javax.swing.JFrame{
+    public QRimage() {
+        a = new javax.swing.JLabel();
+        JPanel panel = new JPanel();
+        panel.add(a);
+        a.setIcon(new javax.swing.ImageIcon("C:\\Users\\Xavier\\Downloads\\QR Code\\QR Code\\QRCode.png"));
+        getContentPane().add(panel);
+        pack();
+    }
+
+	public void open()
+	{
+	  java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new QRimage().setVisible(true);
+            }
+        });
+	}
+	
+	public void close()
+	{
+	  setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+	}
+	
+    public static void main(String args[]){
+        
+    }
+
+    private javax.swing.JLabel a;
+}
